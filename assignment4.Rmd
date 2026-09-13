@@ -9,22 +9,32 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+# Exercise 1
+## Regarding the computation of order statistics
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+Hyndman and Fan (1998) proposed 9 ways to compute the quantile over a set of sample data.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+Generally speaking, to obtain the quantile p for ordered data x of size N, the function will look at `x[floor(p*N)]` and `x[floor(p*N) + 1]`, and use one of two general methods to compute the quantile:
 
-```{r cars}
-summary(cars)
-```
+1. a discrete method that picks a value between these two ordered values in x set by another constant
+1. a continuous interpolation method that "smooths" the quantile values when `x[floor(p*N)] <> x[floor(p*N) + 1]`
 
-## Including Plots
+Extreme values of p(very close to 0 or 1) are handled explicitly to be x[1] and x[N] respectively.
 
-You can also embed plots, for example:
+Wicklin shows that for n >= 100, the difference between the methods are minimal. Differences are noticeable for smaller datasets however, and so in these scenarios it's important to report which one you used.
 
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
+My version of R uses type=7, which is one of the continuous interpolation methods.
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+I would use the default unless there was strong reasoning for otherwise (e.g. small dataset where a discrete method is more appropriate given the context). Using the default is common practice and therefore makes it quicker simpler for other statisticians to understand outputs.
+
+
+## First-order bootstrap bias corrected estimator
+
+First, we create the function that allows us to compute our original estimator.
+
+
+```{r e1_lambda_iqr}
+lambda_iqr <- function(X){
+  q <- quantile(X)
+  return (log(3) / (q["75%"] - q["25%"]))
+}
