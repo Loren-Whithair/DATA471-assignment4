@@ -32,9 +32,47 @@ I would use the default unless there was strong reasoning for otherwise (e.g. sm
 
 First, we create the function that allows us to compute our original estimator.
 
-
 ```{r e1_lambda_iqr}
-lambda_iqr <- function(X){
-  q <- quantile(X)
-  return (log(3) / (q["75%"] - q["25%"]))
+lambda_iqr <- function(data){
+  return (log(3) / IQR(data))
 }
+set.seed(12345)
+# an example:
+x <- rexp(100, rate=1)
+print(lambda_iqr(x))
+```
+
+We then create a function that uses bootstrapping to estimated the expected value.
+```{r e1_estimated_value}
+bootstrap_expected_value <- function(data){
+  n <- 200
+  boot_output <- rep(0, n)
+  
+  for(l in 1:n) {
+    boot_output[l] <- lambda_iqr(sample(data, size=length(data), replace=TRUE))
+  }
+  # print(bootstrapped_lambda)
+  return(mean(boot_output))
+}
+# an example:
+bootstrap_expected_value(x)
+```
+
+Lastly, create the function that returns the bootstrap bias corrected estimator for $\lambda_{IQR}$:
+
+```{r e1_lambda_tilda}
+lambda_tilda <- function(data){
+  (2*lambda_iqr(data)) - bootstrap_expected_value(data)
+}
+```
+
+Checking it works:
+
+```{r e1_test}
+set.seed(1234567)
+x <- rexp(100, rate=1)
+paste0("Lambda IQR: ",lambda_iqr(x))
+paste0("Lambda Tilda: ", lambda_tilda(x))
+```
+
+Note that the inter-quartile range for a bootstrapped sample can be zero. This is more likely to occur for smaller x and larger B (bootstrapping iterations). This can make our parameter estimator infinite.

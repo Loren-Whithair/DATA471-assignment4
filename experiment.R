@@ -1,18 +1,35 @@
-# computes the lambda_iqr estimators
-lambda_iqr <- function(X){
-  q <- quantile(X)
-  return (log(3) / (q["75%"] - q["25%"]))
+library(boot)
+
+set.seed(12345)
+
+x <- rexp(11, rate = 1)
+
+x
+
+lambda_iqr <- function(data){log(3) / IQR(data)}
+lambda_iqr(x)
+
+# bootstrap <- function(data) {
+#   r <- round(runif(length(data), min=1, max=length(data)))
+#   data[r]
+# }
+
+
+# 
+# x
+# bootstrap(x)
+
+boot_output <- rep(0, 200)
+
+for(l in 1:200) {
+  boot_output[l] <- lambda_iqr(sample(x, size=11, replace=TRUE))
 }
 
-X <- c(1,1,2,3,3,4,8,8,10)
-lambda_iqr(X)
-typeof(quantile(X)[5])
+boot_output
 
 
-q <- quantile(X)
+lambda_iqr(x)
 
-log(3) / (q["75%"] - q["25%"])
+(2 * lambda_iqr(x)) - (mean(boot_output))
 
-typeof((q["75%"] - q["25%"]))
 
-typeof(lambda_iqr(X))
