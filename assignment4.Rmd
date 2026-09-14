@@ -44,25 +44,22 @@ print(lambda_iqr(x))
 
 We then create a function that uses bootstrapping to estimated the expected value.
 ```{r e1_estimated_value}
-bootstrap_expected_value <- function(data){
-  n <- 200
-  boot_output <- rep(0, n)
-  
-  for(l in 1:n) {
+
+bootstrap_lambda <- function(data){
+  boot_output <- rep(0, 200)
+  for(l in 1:200){
     boot_output[l] <- lambda_iqr(sample(data, size=length(data), replace=TRUE))
   }
-  # print(bootstrapped_lambda)
-  return(mean(boot_output))
+  return(boot_output)
 }
-# an example:
-bootstrap_expected_value(x)
+print(mean(bootstrap_lambda(x)))
 ```
 
 Lastly, create the function that returns the bootstrap bias corrected estimator for $\lambda_{IQR}$:
 
 ```{r e1_lambda_tilda}
 lambda_tilda <- function(data){
-  (2*lambda_iqr(data)) - bootstrap_expected_value(data)
+  (2*lambda_iqr(data)) - mean(bootstrap_lambda(x))
 }
 ```
 
@@ -74,5 +71,5 @@ x <- rexp(100, rate=1)
 paste0("Lambda IQR: ",lambda_iqr(x))
 paste0("Lambda Tilda: ", lambda_tilda(x))
 ```
+Note that the inter-quartile range for a bootstrapped sample can be zero. This is more likely to occur for smaller x and larger B (bootstrapping iterations). This can make our parameter estimator infinite (divide by zero issue).
 
-Note that the inter-quartile range for a bootstrapped sample can be zero. This is more likely to occur for smaller x and larger B (bootstrapping iterations). This can make our parameter estimator infinite.
