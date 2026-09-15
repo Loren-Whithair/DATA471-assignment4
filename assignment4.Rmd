@@ -88,6 +88,8 @@ Next, we perform the Monte Carlo experiment:
 
 ```{r monte_carlo}
 
+set.seed(1234567)
+
 reps <- 5000 # the number of replications per lambda, n combo
 
 results <- data.frame()
@@ -133,4 +135,150 @@ for (lam in c(.1,1,10)){ #all lambda (true rate of the exponential) we are testi
 }
 ```
 
-#### Results of the Monte Caro 
+#### Results of the Monte Carlo 
+```{r mse_table}
+results
+```
+
+```{r mse_graphs}
+
+```
+
+# Exercise 2
+
+```{r e2_setup}
+library(dplyr)
+library(ggplot2)
+library(fpp2)
+data(ausbeer)
+```
+
+### 1. Frequency
+
+The frequency of the series is quarterly (also expressed as 4 observations per period)
+
+This can be found with the `frequency` function:
+```{r e2_freq}
+frequency(ausbeer)
+```
+Or by directly observing the number of columns per row:
+```{r e2_freq2}
+head(ausbeer, n=20L)
+```
+### 2. Overall behaviour
+```{r ts_behaviour}
+autoplot(ausbeer) + 
+  ggtitle("Quarterly Beer Production in Australia") +
+  xlab("Quarter") +
+  ylab("Beer produced in Megalitres (ML)")
+```
+\begin{centre}
+**Figure 1:** Time Series plot of quarterly beer production in MegaLitres
+\end{centre}
+
+We see a long term trend in Figure 1: overall production increases dramatically from 1956 to approximately 1975, after which we see a much slower decline in production. Production may become steady around  2005, but without further data it is hard to tell if the downward trend has ended.
+
+### 3. Seasonality
+
+```{r e1_seasonality}
+window(ausbeer, end=1970) %>%
+  ggseasonplot(year.labels=FALSE) +
+  ggtitle("Quarterly production of beer by season") +
+  ylab("Beer produced in Megalitres (ML)")
+```
+\begin{centre}
+**Figure 2.1:** Season plot of quarterly beer production for years 1956 to 1970
+\end{centre}
+
+```{r e1_seasonality_2}
+window(ausbeer, start=1971, end=1995) %>%
+  ggseasonplot(year.labels=FALSE) +
+  ggtitle("Quarterly production of beer by season") +
+  ylab("Beer produced in Megalitres (ML)")
+```
+\begin{centre}
+**Figure 2.2:** Season plot of quarterly beer production for years 1971 to 1995
+\end{centre}
+
+```{r e1_seasonality_3}
+window(ausbeer, start=1996, end=2010) %>%
+  ggseasonplot(year.labels=FALSE) +
+  ggtitle("Quarterly production of beer by season") +
+  ylab("Beer produced in Megalitres (ML)")
+```
+\begin{centre}
+**Figure 2.3:** Season plot of quarterly beer production for years 1996 to 2010
+\end{centre}
+
+Seasonality has been displayed on separate graphs for visibility of the two parts of the trend.
+
+Figures 2.1 and 2.2 show clear seasonality: beer production is at it's highest for the year in Q4, closely followed by Q1. There is a drop in Q2 and Q3.
+
+This may be due to more beer selling when the weather is warmer (Q4 is spring to early summer, Q1 is summer to early Autumn).
+
+### 4. Variability
+
+We see variance changes over time in Figure 1. We see an increase in variance around the mean per season after 1970 compared to before. This variance seems to slowly decrease along with the slow downward trend leading up to 2010. 
+
+The difference in variance is not dramatic, but if a model were to be fit it may be appropriate to explore transformations, if the original model does not perform well.
+
+### 5. Unusual observations
+
+Notice in Figure 1 that the trend for the lowest producing quarter (the lowest point in each curve) suddenly jumps up around 1974. Before this the upwards trend was very consistent.
+
+While 1975 to 1990 can be considered more "volatile" than before and after this period, there are two comparable spikes in beer production around 1989 and 1991. Similarly, in 2005, much less beer is produced in the busiest quarter compared to other years after 2000. These stand out as they break our more consistent patterns.
+
+### 6. Seasonal plots
+
+Refer to Figures 2.1, 2.2, and 2.3
+
+These plots makes the trend more apparent: for example, we can see in Figure 2.1 that later years exhibit more beer production across all quarters.
+
+Additionally, it becomes easier to compare seasonality between years: for example, in Figure 2.3 we can see that Q2 frequently produces less beer than Q3, but that for some years such as the difference is negligible.
+
+
+### 7. Sub-series plots
+```{r subseries}
+ggsubseriesplot(ausbeer) +
+  ggtitle("Seasonal subseries plot: beer production by quarter") +
+  ylab("Beer produced in Megalitres (ML)")
+```
+\begin{centre}
+**Figure 3:** Sub-series plot of beer production within each quarter
+\end{centre}
+
+The means for each quarter are shown by the blue bars in Figure 3.
+
+Q2 on average has the lowest beer production, while Q4 has the highest on average.
+
+All four sub-plots exhibit comparable shapes, indicating somewhat consistent seasonality. It is worth noting that the volatility and sudden spike in the overall trend is more apparent in Q1 and Q4 than in Q2 and Q3 (taller spikes can be seen in the Q1 and Q2 sub-plots). Given these are the highest producing quarters, it makes sense that in a more volatile state they would exhibit more variability.
+
+
+### 8. Preparation for modelling
+
+I would likely de-trend the data before training a model. Many modelling methods perform better under stationarity, which requires the mean, variance, and correlation with the past to be consistent. Figure 4 shows the effect of the trend: the mean shows a lot of variability.
+
+As discussed in part **(4)**, we see slight changes in the variability over time. A transformation may be appropriate, but it would be reasonable to try a model without a transformation first to see it's performance.
+
+```{r stationarity}
+df <- data.frame(
+  year=floor(time(ausbeer)),
+  beer=as.numeric(ausbeer)
+)
+
+df %>% 
+  group_by(year) %>% 
+  summarise(avg_production = mean(beer, na.rm=TRUE)) %>%
+  ggplot() +
+    geom_line(aes(x=year, y=avg_production)) +
+    ggtitle("Average quarterly beer production per year") +
+    ylab("Mean beer production across all quarters in the year (ML)") +
+    xlab("Year")
+
+```
+\begin{centre}
+**Figure 4:** Mean annual beer production across quarters
+\end{centre}
+
+
+
