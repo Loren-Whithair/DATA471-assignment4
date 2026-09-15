@@ -38,7 +38,7 @@ lambda_iqr <- function(data){
 }
 set.seed(12345)
 # an example:
-x <- rexp(100, rate=1)
+x <- rexp(11, rate=1)
 print(lambda_iqr(x))
 ```
 
@@ -73,3 +73,64 @@ paste0("Lambda Tilda: ", lambda_tilda(x))
 ```
 Note that the inter-quartile range for a bootstrapped sample can be zero. This is more likely to occur for smaller x and larger B (bootstrapping iterations). This can make our parameter estimator infinite (divide by zero issue).
 
+## Monte Carlo Experiment
+
+Firstly, we need to instantiate the final estimator function, based on the maximum likelihood:
+
+```{r lambda_ml}
+lambda_ml <- function(data){
+  return(mean(data))
+}
+# checking it works:
+lambda_ml(rexp(10, rate=1))
+```
+Next, we perform the Monte Carlo experiment:
+
+```{r monte_carlo}
+
+reps <- 5000 # the number of replications per lambda, n combo
+
+results <- data.frame()
+
+for (lam in c(.1,1,10)){ #all lambda (true rate of the exponential) we are testing
+  for (n in c(5,30,100)){# all sample sizes we are testing
+    theta.ml <- rep(NA, reps)
+    theta.iqr <- rep(NA, reps)
+    theta.iqr_tilda <- rep(NA, reps)
+    for (r in 1:reps){
+      x <- rexp(n, rate=lam)
+      theta.ml[r] <- lambda_ml(x)
+      theta.iqr[r] <- lambda_iqr(x)
+      theta.iqr_tilda[r] <- lambda_tilda(x) # lambda_iqr adjusted for bias with bootstrapping
+    }
+
+    # calculate the bias of each theta, B
+    # - uses law of large numbers (LLM) to approximate expected value as mean of multiple samples
+    # - lam is the true statistics that we are trying to estimate
+    bias.ml <- mean(theta.ml) - lam 
+    bias.iqr <- mean(theta.iqr) - lam 
+    bias.iqr_tilda <- mean(theta.iqr_tilda) - lam 
+    
+    # calculate the variance of each theta
+    var.ml <- var(theta.ml)
+    var.iqr <- var(theta.iqr)
+    var.iqr_tilda <- var(theta.iqr_tilda)
+
+    # calculate the MSE
+    mse.ml <- bias.ml^2 + var.ml
+    mse.iqr <- bias.iqr^2 + var.iqr
+    mse.iqr_tilda <- bias.iqr_tilda^2 + var.iqr_tilda
+    
+    # store the values
+    results <- rbind(results, data.frame(
+      lambda = lam,
+      n = n,
+      MSE_ml = mse.ml,
+      MSE_iqr = mse.iqr,
+      MSE_iqr_tilda = mse.iqr_tilda
+    ))
+  }
+}
+```
+
+#### Results of the Monte Caro 
