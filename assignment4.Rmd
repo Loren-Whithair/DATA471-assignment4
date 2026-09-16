@@ -7,6 +7,10 @@ output: pdf_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(fpp2)
 ```
 
 # Exercise 1
@@ -84,14 +88,16 @@ lambda_ml <- function(data){
 # checking it works:
 lambda_ml(rexp(10, rate=1))
 ```
-Next, we perform the Monte Carlo experiment:
+Next, we perform the Monte Carlo experiment.
+
+Note that the number of repetitions chosen for each scenario is 5000. The more times we repeat the experiment per scenario, the closer we will converge measuring the true bias and variance. 5000 is considered sufficient for our analysis.
 
 ```{r monte_carlo}
 
 set.seed(1234567)
 
 # TODO: change back to 5000
-reps <- 500 # the number of replications per lambda, n combo
+reps <- 5000 # the number of replications per lambda, n scenario
 
 results <- data.frame()
 
@@ -132,10 +138,10 @@ for (lam in c(.1,1,10)){ #all lambda (true rate of the exponential) we are testi
     results <- rbind(results, data.frame(
       lambda = lam,
       n = n,
-      MSE_ml = mse.ml,
-      MSE_iqr = mse.iqr,
-      MSE_iqr_tilda = mse.iqr_tilda,
-      inf_iqr_tilda_reps_prop = inf_iqr_tilda_reps/reps # how many of the IQR tilda values returned infinity, and therefore couldn't be used?
+      mse_ml = mse.ml,
+      mse_iqr = mse.iqr,
+      mse_iqr_tilda = mse.iqr_tilda,
+      prop_inf_reps = inf_iqr_tilda_reps/reps # how many of the IQR tilda values returned infinity, and therefore couldn't be used?
     ))
   }
 }
@@ -143,19 +149,43 @@ for (lam in c(.1,1,10)){ #all lambda (true rate of the exponential) we are testi
 
 #### Results of the Monte Carlo 
 ```{r mse_table}
-results
+results_rounded <- results %>% mutate(mse_ml = round(mse_ml, 4), mse_iqr = round(mse_iqr, 4), mse_iqr_tilda = round(mse_iqr_tilda, 4))
+colnames(results_rounded) <- c("Lambda", "n", "MSE (ML)", "MSE (IQR)", "MSE (IQR, bias-corrected)", "Proportion of Infinite reps (IQR, bias-corrected)")
+
+results_rounded
 ```
+\begin{centre}
+**Table 1:** The Mean Squared Error (MSE) for each estimator, for each scenario of (Lambda, n)
+\end{centre}
+
+For n=5, our bootstrap bias-corrected IQR estimator could not be computed. To compute it we take 200 bootstrapped samples from x. For x of smaller dimensionality, the odds of sampling the same value every time are increased. For these samples, the IQR is zero, our lambda_IQR estimator is infinite / undefined, and our bias-corrected estimator is negative infinity. 
+
+For n=5, 100% of repetitions exhibited this issue (seen in the final column equaling 1); the estimator and it's MSE could not be computed.
+
+Referring to Table 1 we notice:
+
+- For all three estimators, for all three Lambda, smaller sample sizes (smaller n) make it harder to estimate Lambda
+- Our IQR based estimator is a clear improvement on the ML estimator, for larger n. When a sample size is smaller, our sample IQR is less likely to represent the true population's IQR, which may be causing this inaccuracy
+- As to be expected, our bias-corrected IQR estimator is generally more accurate than our original IQR estimator, with the caveat that it is very difficult to compute for smaller sample sizes due to the bootstrapping method used.
+
 
 ```{r mse_graphs}
+results_long <- results %>%
+  mutate(Scenario=paste0("(", Lambda, ", ", n, ")")) %>%
+  select(Lambda, n, Scenario, mse_ml, mse_iqr, mse_iqr_tilda) %>% 
+  pivot_longer(cols=c(mse_ml, mse_iqr, mse_iqr_tilda), names_to="Estimator", values_to="MSE")
 
+ggplot(results_long, aes(x = Scenario,
+                    y = MSE,
+                    fill=Estimator)) +
+  geom_bar(stat="identity", position="dodge") +
+  labs(x = "Scenario (Lambda, n)", colour = "MSE") +
+  theme(axis.text.x = element_text(angle=45, hjust=1))
 ```
 
 # Exercise 2
 
 ```{r e2_setup}
-library(dplyr)
-library(ggplot2)
-library(fpp2)
 data(ausbeer)
 ```
 
