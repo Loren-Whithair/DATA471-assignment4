@@ -96,7 +96,6 @@ Note that the number of repetitions chosen for each scenario is 5000. The more t
 
 set.seed(1234567)
 
-# TODO: change back to 5000
 reps <- 5000 # the number of replications per lambda, n scenario
 
 results <- data.frame()
@@ -141,7 +140,8 @@ for (lam in c(.1,1,10)){ #all lambda (true rate of the exponential) we are testi
       mse_ml = mse.ml,
       mse_iqr = mse.iqr,
       mse_iqr_tilda = mse.iqr_tilda,
-      prop_inf_reps = inf_iqr_tilda_reps/reps # how many of the IQR tilda values returned infinity, and therefore couldn't be used?
+      # how many of the IQR tilda values returned infinity, and therefore couldn't be used?
+      prop_inf_reps = inf_iqr_tilda_reps/reps 
     ))
   }
 }
@@ -149,39 +149,29 @@ for (lam in c(.1,1,10)){ #all lambda (true rate of the exponential) we are testi
 
 #### Results of the Monte Carlo 
 ```{r mse_table}
-results_rounded <- results %>% mutate(mse_ml = round(mse_ml, 4), mse_iqr = round(mse_iqr, 4), mse_iqr_tilda = round(mse_iqr_tilda, 4))
-colnames(results_rounded) <- c("Lambda", "n", "MSE (ML)", "MSE (IQR)", "MSE (IQR, bias-corrected)", "Proportion of Infinite reps (IQR, bias-corrected)")
+results_rounded <- results %>% mutate(
+  mse_ml = round(mse_ml, 4), 
+  mse_iqr = round(mse_iqr, 4), 
+  mse_iqr_tilda = round(mse_iqr_tilda, 4)
+)
 
+colnames(results_rounded) <- c("Lambda", 
+                               "n",
+                               "MSE (ML)", 
+                               "MSE (IQR)", 
+                               "MSE (IQR, bias-corrected)",
+                               "Proportion of Infinite reps (IQR, bias-corrected)")
 results_rounded
 ```
-\begin{centre}
 **Table 1:** The Mean Squared Error (MSE) for each estimator, for each scenario of (Lambda, n)
-\end{centre}
-
-For n=5, our bootstrap bias-corrected IQR estimator could not be computed. To compute it we take 200 bootstrapped samples from x. For x of smaller dimensionality, the odds of sampling the same value every time are increased. For these samples, the IQR is zero, our lambda_IQR estimator is infinite / undefined, and our bias-corrected estimator is negative infinity. 
-
-For n=5, 100% of repetitions exhibited this issue (seen in the final column equaling 1); the estimator and it's MSE could not be computed.
 
 Referring to Table 1 we notice:
 
+- For n=5, our bootstrap bias-corrected IQR estimator could not be computed for any Lambda. The function takes 200 bootstrapped samples from x. For x of smaller dimensionality, the odds of sampling the same value every time are increased. For these samples, the IQR equals zero, our lambda_IQR estimator is infinite / undefined, and our bias-corrected estimator equals negative infinity. 
 - For all three estimators, for all three Lambda, smaller sample sizes (smaller n) make it harder to estimate Lambda
 - Our IQR based estimator is a clear improvement on the ML estimator, for larger n. When a sample size is smaller, our sample IQR is less likely to represent the true population's IQR, which may be causing this inaccuracy
 - As to be expected, our bias-corrected IQR estimator is generally more accurate than our original IQR estimator, with the caveat that it is very difficult to compute for smaller sample sizes due to the bootstrapping method used.
 
-
-```{r mse_graphs}
-results_long <- results %>%
-  mutate(Scenario=paste0("(", Lambda, ", ", n, ")")) %>%
-  select(Lambda, n, Scenario, mse_ml, mse_iqr, mse_iqr_tilda) %>% 
-  pivot_longer(cols=c(mse_ml, mse_iqr, mse_iqr_tilda), names_to="Estimator", values_to="MSE")
-
-ggplot(results_long, aes(x = Scenario,
-                    y = MSE,
-                    fill=Estimator)) +
-  geom_bar(stat="identity", position="dodge") +
-  labs(x = "Scenario (Lambda, n)", colour = "MSE") +
-  theme(axis.text.x = element_text(angle=45, hjust=1))
-```
 
 # Exercise 2
 
@@ -189,7 +179,7 @@ ggplot(results_long, aes(x = Scenario,
 data(ausbeer)
 ```
 
-### 1. Frequency
+## 1. Frequency
 
 The frequency of the series is quarterly (also expressed as 4 observations per period)
 
@@ -201,20 +191,18 @@ Or by directly observing the number of columns per row:
 ```{r e2_freq2}
 head(ausbeer, n=20L)
 ```
-### 2. Overall behaviour
+## 2. Overall behaviour
 ```{r ts_behaviour}
 autoplot(ausbeer) + 
   ggtitle("Quarterly Beer Production in Australia") +
   xlab("Quarter") +
   ylab("Beer produced in Megalitres (ML)")
 ```
-\begin{centre}
 **Figure 1:** Time Series plot of quarterly beer production in MegaLitres
-\end{centre}
 
 We see a long term trend in Figure 1: overall production increases dramatically from 1956 to approximately 1975, after which we see a much slower decline in production. Production may become steady around  2005, but without further data it is hard to tell if the downward trend has ended.
 
-### 3. Seasonality
+## 3. Seasonality
 
 ```{r e1_seasonality}
 window(ausbeer, end=1970) %>%
@@ -222,9 +210,7 @@ window(ausbeer, end=1970) %>%
   ggtitle("Quarterly production of beer by season") +
   ylab("Beer produced in Megalitres (ML)")
 ```
-\begin{centre}
 **Figure 2.1:** Season plot of quarterly beer production for years 1956 to 1970
-\end{centre}
 
 ```{r e1_seasonality_2}
 window(ausbeer, start=1971, end=1995) %>%
@@ -232,9 +218,8 @@ window(ausbeer, start=1971, end=1995) %>%
   ggtitle("Quarterly production of beer by season") +
   ylab("Beer produced in Megalitres (ML)")
 ```
-\begin{centre}
 **Figure 2.2:** Season plot of quarterly beer production for years 1971 to 1995
-\end{centre}
+
 
 ```{r e1_seasonality_3}
 window(ausbeer, start=1996, end=2010) %>%
@@ -242,9 +227,7 @@ window(ausbeer, start=1996, end=2010) %>%
   ggtitle("Quarterly production of beer by season") +
   ylab("Beer produced in Megalitres (ML)")
 ```
-\begin{centre}
 **Figure 2.3:** Season plot of quarterly beer production for years 1996 to 2010
-\end{centre}
 
 Seasonality has been displayed on separate graphs for visibility of the two parts of the trend.
 
@@ -252,36 +235,34 @@ Figures 2.1 and 2.2 show clear seasonality: beer production is at it's highest f
 
 This may be due to more beer selling when the weather is warmer (Q4 is spring to early summer, Q1 is summer to early Autumn).
 
-### 4. Variability
+## 4. Variability
 
 We see variance changes over time in Figure 1. We see an increase in variance around the mean per season after 1970 compared to before. This variance seems to slowly decrease along with the slow downward trend leading up to 2010. 
 
 The difference in variance is not dramatic, but if a model were to be fit it may be appropriate to explore transformations, if the original model does not perform well.
 
-### 5. Unusual observations
+## 5. Unusual observations
 
 Notice in Figure 1 that the trend for the lowest producing quarter (the lowest point in each curve) suddenly jumps up around 1974. Before this the upwards trend was very consistent.
 
 While 1975 to 1990 can be considered more "volatile" than before and after this period, there are two comparable spikes in beer production around 1989 and 1991. Similarly, in 2005, much less beer is produced in the busiest quarter compared to other years after 2000. These stand out as they break our more consistent patterns.
 
-### 6. Seasonal plots
+## 6. Seasonal plots
 
-Refer to Figures 2.1, 2.2, and 2.3
+See Figures 2.1, 2.2, and 2.3.
 
 These plots makes the trend more apparent: for example, we can see in Figure 2.1 that later years exhibit more beer production across all quarters.
 
 Additionally, it becomes easier to compare seasonality between years: for example, in Figure 2.3 we can see that Q2 frequently produces less beer than Q3, but that for some years such as the difference is negligible.
 
 
-### 7. Sub-series plots
+## 7. Sub-series plots
 ```{r subseries}
 ggsubseriesplot(ausbeer) +
   ggtitle("Seasonal subseries plot: beer production by quarter") +
   ylab("Beer produced in Megalitres (ML)")
 ```
-\begin{centre}
 **Figure 3:** Sub-series plot of beer production within each quarter
-\end{centre}
 
 The means for each quarter are shown by the blue bars in Figure 3.
 
@@ -290,7 +271,7 @@ Q2 on average has the lowest beer production, while Q4 has the highest on averag
 All four sub-plots exhibit comparable shapes, indicating somewhat consistent seasonality. It is worth noting that the volatility and sudden spike in the overall trend is more apparent in Q1 and Q4 than in Q2 and Q3 (taller spikes can be seen in the Q1 and Q2 sub-plots). Given these are the highest producing quarters, it makes sense that in a more volatile state they would exhibit more variability.
 
 
-### 8. Preparation for modelling
+## 8. Preparation for modelling
 
 I would likely de-trend the data before training a model. Many modelling methods perform better under stationarity, which requires the mean, variance, and correlation with the past to be consistent. Figure 4 shows the effect of the trend: the mean shows a lot of variability.
 
@@ -312,9 +293,7 @@ df %>%
     xlab("Year")
 
 ```
-\begin{centre}
 **Figure 4:** Mean annual beer production across quarters
-\end{centre}
 
 
 
