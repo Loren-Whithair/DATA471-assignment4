@@ -75,7 +75,7 @@ x <- rexp(100, rate=1)
 paste0("Lambda IQR: ",lambda_iqr(x))
 paste0("Lambda Tilda: ", lambda_tilda(x))
 ```
-Note that the inter-quartile range for a bootstrapped sample can be zero. This is more likely to occur for smaller x and larger B (bootstrapping iterations). This can make our parameter estimator infinite (divide by zero issue).
+Note that the inter-quartile range for a bootstrap sample can be zero. This is more likely to occur for smaller x and larger B (bootstrapping iterations). This can make our parameter estimator infinite (divide by zero issue).
 
 ## Monte Carlo Experiment
 
@@ -83,7 +83,7 @@ Firstly, we need to instantiate the final estimator function, based on the maxim
 
 ```{r lambda_ml}
 lambda_ml <- function(data){
-  return(mean(data))
+  return(1/mean(data))
 }
 # checking it works:
 lambda_ml(rexp(10, rate=1))
@@ -167,10 +167,10 @@ results_rounded
 
 Referring to Table 1 we notice:
 
-- For n=5, our bootstrap bias-corrected IQR estimator could not be computed for any Lambda. The function takes 200 bootstrapped samples from x. For x of smaller dimensionality, the odds of sampling the same value every time are increased. For these samples, the IQR equals zero, our lambda_IQR estimator is infinite / undefined, and our bias-corrected estimator equals negative infinity. 
-- For all three estimators, for all three Lambda, smaller sample sizes (smaller n) make it harder to estimate Lambda
-- Our IQR based estimator is a clear improvement on the ML estimator, for larger n. When a sample size is smaller, our sample IQR is less likely to represent the true population's IQR, which may be causing this inaccuracy
-- As to be expected, our bias-corrected IQR estimator is generally more accurate than our original IQR estimator, with the caveat that it is very difficult to compute for smaller sample sizes due to the bootstrapping method used.
+- For $n=5$, our bootstrap bias-corrected IQR estimator could not be computed for any $\Lambda$. The function takes 200 bootstrap samples from x. For x of smaller dimensionality, the odds of sampling the same value every time are increased. For these samples, the IQR equals zero, our $\lambda_{IQR}$ estimator is infinite / undefined, and our bias-corrected estimator equals negative infinity. 100% of our repetitions computed $\lambda_{IQR}$ as infinite for $n=5$ - that is, at least one bootstrap value sampled the same data point 5 times (see proportion of infinite reps in Table 1).
+- For all three estimators, for all three $\Lambda$, smaller sample sizes (smaller $n$) make it harder to estimate $\lambda$
+- While our ML (mean-based) function is sensitive to outliers within one instance, it still exhibits the lowest MSE across almost all scenarios in the Monte Carlo experiment. This is somewhat unsurprising, given it is proven theoretically that the mean value for the exponential distribution is the reciprocal of $\lambda$
+- Across all scenarios our bias-corrected IQR estimator performs the same or worse than our regular IQR estimator
 
 
 # Exercise 2
