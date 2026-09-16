@@ -90,9 +90,11 @@ Next, we perform the Monte Carlo experiment:
 
 set.seed(1234567)
 
-reps <- 5000 # the number of replications per lambda, n combo
+# TODO: change back to 5000
+reps <- 500 # the number of replications per lambda, n combo
 
 results <- data.frame()
+
 
 for (lam in c(.1,1,10)){ #all lambda (true rate of the exponential) we are testing
   for (n in c(5,30,100)){# all sample sizes we are testing
@@ -105,18 +107,21 @@ for (lam in c(.1,1,10)){ #all lambda (true rate of the exponential) we are testi
       theta.iqr[r] <- lambda_iqr(x)
       theta.iqr_tilda[r] <- lambda_tilda(x) # lambda_iqr adjusted for bias with bootstrapping
     }
+    
+    theta.iqr_tilda[abs(theta.iqr_tilda)==Inf] <- NA
+    inf_iqr_tilda_reps <- sum(is.na(theta.iqr_tilda))
 
     # calculate the bias of each theta, B
     # - uses law of large numbers (LLM) to approximate expected value as mean of multiple samples
     # - lam is the true statistics that we are trying to estimate
     bias.ml <- mean(theta.ml) - lam 
     bias.iqr <- mean(theta.iqr) - lam 
-    bias.iqr_tilda <- mean(theta.iqr_tilda) - lam 
+    bias.iqr_tilda <- mean(theta.iqr_tilda, na.rm=TRUE) - lam 
     
     # calculate the variance of each theta
     var.ml <- var(theta.ml)
     var.iqr <- var(theta.iqr)
-    var.iqr_tilda <- var(theta.iqr_tilda)
+    var.iqr_tilda <- var(theta.iqr_tilda, na.rm=TRUE)
 
     # calculate the MSE
     mse.ml <- bias.ml^2 + var.ml
@@ -129,7 +134,8 @@ for (lam in c(.1,1,10)){ #all lambda (true rate of the exponential) we are testi
       n = n,
       MSE_ml = mse.ml,
       MSE_iqr = mse.iqr,
-      MSE_iqr_tilda = mse.iqr_tilda
+      MSE_iqr_tilda = mse.iqr_tilda,
+      inf_iqr_tilda_reps_prop = inf_iqr_tilda_reps/reps # how many of the IQR tilda values returned infinity, and therefore couldn't be used?
     ))
   }
 }
